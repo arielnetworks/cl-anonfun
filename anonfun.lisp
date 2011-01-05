@@ -39,10 +39,12 @@
                  (symbol= (cadr args) '%1))
         (setf aux `(,(car args) ,(cadr args)))
         (pop args))
-      (loop for (a b) on args
+      (loop with a = '%0
+            for b in args
             for ignores = (make-ignore-vars-between a b)
-            collect a into lambda-list
+            do (setf a b)
             append ignores into lambda-list
+            collect b into lambda-list
             append ignores into ignore-vars
             finally
          (when rest
