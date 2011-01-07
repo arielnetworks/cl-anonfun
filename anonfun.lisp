@@ -14,7 +14,7 @@
   (defun arg-num (arg)
     (and (arg-p arg)
          (let ((spec (subseq (symbol-name arg) 1)))
-           (if (string= spec "") 0 (parse-integer spec)))))
+           (if (string= spec "") 1 (parse-integer spec)))))
 
   (defun extract-args (body)
     (cond ((arg-p body) (list body))
@@ -25,46 +25,64 @@
             :test #'symbol=))))
 
   (defun sort-args (args)
-    (sort args (lambda (x y) (< (arg-num x) (arg-num y)))))
+    (sort args (lambda (x y)
+                 (cond
+                   ((symbol= x '%) t)
+                   ((symbol= y '%) nil)
+                   (t (< (arg-num x) (arg-num y)))))))
 
   (defun make-ignore-vars-between (start end)
     (when end
-      (loop for n from (1+ (arg-num start)) to (1- (arg-num end))
+      (loop for n from (1+ start) to (1- end)
             collect (gensym (format nil "IGNORE_~D_" n)))))
 
-  (defun make-lambda-list (args)
+  (defun make-lambda-list (narg args)
     (let (aux (rest (car (member '%& args :test #'symbol=))))
       (setf args (sort-args (remove rest args)))
       (when (and (symbol= (car args) '%)
                  (symbol= (cadr args) '%1))
         (setf aux `(,(car args) ,(cadr args)))
         (pop args))
-      (loop with a = '%0
-            for b in args
-            for ignores = (make-ignore-vars-between a b)
-            do (setf a b)
+      (loop with x = 0
+            for arg in args
+            for y = (arg-num arg)
+            for ignores = (make-ignore-vars-between x y)
+            do (setf x y)
             append ignores into lambda-list
-            collect b into lambda-list
+            collect arg into lambda-list
             append ignores into ignore-vars
             finally
+         (when narg
+           (let ((ignores (make-ignore-vars-between x (1+ narg))))
+             (setf lambda-list (append lambda-list ignores))
+             (setf ignore-vars (append ignore-vars ignores))))
          (when rest
            (setf lambda-list (append lambda-list `(&rest ,rest))))
          (when aux
            (setf lambda-list (append lambda-list `(&aux ,aux))))
-         (return (values lambda-list ignore-vars))))))
+         (return (values lambda-list ignore-vars)))))
+
+  (defun make-fn (narg body)
+    (multiple-value-bind (lambda-list ignore-vars)
+        (make-lambda-list narg (extract-args body))
+      `(lambda ,lambda-list
+         ,@(when ignore-vars
+             `((declare (ignore ,@ignore-vars))))
+         ,body))))
 
 (defmacro fn (&rest body)
-  (multiple-value-bind (lambda-list ignore-vars)
-      (make-lambda-list (extract-args body))
-    `(lambda ,lambda-list
-       ,@(when ignore-vars
-           `((declare (ignore ,@ignore-vars))))
-       ,body)))
+  (make-fn nil body))
+
+(defmacro fnn (narg &rest body)
+  (make-fn narg body))
 
 (defun fn-reader (stream sub-char numarg)
   (declare (ignore sub-char))
   (unless numarg (setf numarg 1))
-  `(fn ,@(read stream t nil t)))
+  (let ((form (read stream t nil t)))
+    (if (integerp form)
+        `(fnn ,form ,@(read stream t nil t))
+        `(fn ,@form))))
 
 (defun enable-fn-syntax ()
   (set-dispatch-macro-character #\# #\% #'fn-reader))

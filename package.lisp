@@ -4,4 +4,5 @@
   (:use :cl)
   (:nicknames :anonfun)
   (:export :fn
+           :fnn
            :enable-fn-syntax))

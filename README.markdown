@@ -27,17 +27,34 @@ Usage
     (funcall (fn apply #'+ 1 2 3 %&) 4 5)
     ; => 15
 
+### fnn
+
+    (fnn narg &rest body)
+
+Like `fn` except that `fnn` macro can take a number of arguments of the anonymous functions.
+
+#### Examples
+
+    (macroexpand '(fnn 3 eq %2 1))
+    ; => #'(LAMBDA (#:IGNORE_1_896 %2 #:IGNORE_3_897)
+            (DECLARE (IGNORE #:IGNORE_1_896 #:IGNORE_3_897))
+            (EQ %2 1))
+    (funcall (fnn 3 eq %2 1) 3 1 2)
+    ; => T
+
 ### enable-fn-syntax
 
     (enable-fn-syntax)
 
-By calling this function, you can use special syntax `#%(...)` instead of `fn` macro. Any forms of `fn` macro can be used.
+By calling this function, you can use special syntax `#%(...)` instead of `fn` macro. Any forms of `fn` macro can be used. If an integer is suppied after `#%`, `fnn` macro will be used with the integer instead of `fn`.
 
 #### Examples
 
     (enable-fn-syntax)
     (funcall #%(* % %) 3)
     ; => 9
+    (funcall #%3(eq %2 1) 3 1 2)
+    ; => T
 
 License
 -------
