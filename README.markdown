@@ -8,43 +8,49 @@ Usage
 
 ### fn
 
-    (fn &rest body)
+    fn form => lambda-form
 
-`fn` macro returns `lambda` form of `body`. If special symbols starting with `%` are found in `body`, its symbols will be placed to lambda-list of `lambda` form. Special symbol `%` represents its first argument. Special symbol formed `%<n>` represents its `n`'th argument. Special symbol `%&` represents its rest of arguments.
+`fn` macro returns `lambda` form of anonymous function `form`. If special symbols starting with `%` are found in `form`, its symbols will be placed to lambda-list of `lambda` form. Special symbol `%` represents its first argument. Special symbol formed `%<n>` represents its `n`'th argument. Special symbol `%&` represents its rest of arguments.
 
 #### Examples
 
-    (macroexpand '(fn * % %))
+    (macroexpand '(fn (* % %)))
     ; => #'(LAMBDA (%) (* % %))
-    (funcall (fn * % %) 3)
+    
+    (funcall (fn (* % %)) 3)
     ; => 9
-    (macroexpand '(fn mapcar %2 %1))
-    ; => #'(LAMBDA (%1 %2) (mapcar %2 %1))
-    (funcall (fn mapcar %2 %1) '(1 2 3) (fn * % %))
+    
+    (macroexpand '(fn (mapcar %2 %1)))
+    ; => #'(LAMBDA (%1 %2) (MAPCAR %2 %1))
+    
+    (funcall (fn (mapcar %2 %1)) '(1 2 3) (fn (* % %)))
     ; => 1 4 9
-    (macroexpand '(fn apply #'+ 1 2 3 %&))
+    
+    (macroexpand '(fn (apply #'+ 1 2 3 %&)))
     ; => #'(LAMBDA (&REST %&) (APPLY #'+ 1 2 3 %&))
-    (funcall (fn apply #'+ 1 2 3 %&) 4 5)
+    
+    (funcall (fn (apply #'+ 1 2 3 %&)) 4 5)
     ; => 15
 
 ### fnn
 
-    (fnn narg &rest body)
+    fnn narg form => lambda-form
 
-Like `fn` except that `fnn` macro can take a number of arguments of the anonymous functions.
+Like `fn` except that `fnn` macro can take the number of arguments of the anonymous function.
 
 #### Examples
 
-    (macroexpand '(fnn 3 eq %2 1))
-    ; => #'(LAMBDA (#:IGNORE_1_896 %2 #:IGNORE_3_897)
-            (DECLARE (IGNORE #:IGNORE_1_896 #:IGNORE_3_897))
-            (EQ %2 1))
-    (funcall (fnn 3 eq %2 1) 3 1 2)
+    (macroexpand '(fnn 3 (eq %2 1)))
+    ; => #'(LAMBDA (#:IGNORE_1_846 %2 #:IGNORE_3_847)
+             (DECLARE (IGNORE #:IGNORE_1_846 #:IGNORE_3_847))
+             (EQ %2 1))
+    
+    (funcall (fnn 3 (eq %2 1)) 3 1 2)
     ; => T
 
 ### enable-fn-syntax
 
-    (enable-fn-syntax)
+    enable-fn-syntax
 
 By calling this function, you can use special syntax `#%(...)` instead of `fn` macro. Any forms of `fn` macro can be used. If an integer is suppied after `#%`, `fnn` macro will be used with the integer instead of `fn`.
 
@@ -53,6 +59,7 @@ By calling this function, you can use special syntax `#%(...)` instead of `fn` m
     (enable-fn-syntax)
     (funcall #%(* % %) 3)
     ; => 9
+    
     (funcall #%3(eq %2 1) 3 1 2)
     ; => T
 

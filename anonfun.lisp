@@ -62,27 +62,27 @@
            (setf lambda-list (append lambda-list `(&aux ,aux))))
          (return (values lambda-list ignore-vars)))))
 
-  (defun make-fn (narg body)
+  (defun make-fn (narg form)
     (multiple-value-bind (lambda-list ignore-vars)
-        (make-lambda-list narg (extract-args body))
+        (make-lambda-list narg (extract-args form))
       `(lambda ,lambda-list
          ,@(when ignore-vars
              `((declare (ignore ,@ignore-vars))))
-         ,body))))
+         ,form))))
 
-(defmacro fn (&rest body)
-  (make-fn nil body))
+(defmacro fn (form)
+  (make-fn nil form))
 
-(defmacro fnn (narg &rest body)
-  (make-fn narg body))
+(defmacro fnn (narg form)
+  (make-fn narg form))
 
 (defun fn-reader (stream sub-char numarg)
   (declare (ignore sub-char))
   (unless numarg (setf numarg 1))
   (let ((form (read stream t nil t)))
     (if (integerp form)
-        `(fnn ,form ,@(read stream t nil t))
-        `(fn ,@form))))
+        `(fnn ,form ,(read stream t nil t))
+        `(fn ,form))))
 
 (defun enable-fn-syntax ()
   (set-dispatch-macro-character #\# #\% #'fn-reader))
