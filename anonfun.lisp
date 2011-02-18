@@ -84,5 +84,9 @@
         `(fnn ,form ,(read stream t nil t))
         `(fn ,form))))
 
-(defun enable-fn-syntax ()
+(defun %enable-fn-syntax ()
   (set-dispatch-macro-character #\# #\% #'fn-reader))
+
+(defmacro enable-fn-syntax ()
+  '(eval-when (:compile-toplevel :load-toplevel :execute)
+    (%enable-fn-syntax)))
