@@ -24,6 +24,24 @@
                     (extract-args (cdr body)))
             :test #'symbol=))))
 
+  (defun ensure-list (list)
+    (if (listp list)
+        list
+        (list list)))
+
+  (defun remove-quoted-symbols (list)
+    (cond ((atom list) list)
+          ((eql 'quote (first list)) nil)
+          ((eql 'backquote (first list)) (skip-quoted-symbols (cdr list)))
+          (t (append (ensure-list (remove-quoted-symbols (car list)))
+                     (ensure-list (remove-quoted-symbols (cdr list)))))))
+
+  (defun skip-quoted-symbols (list)
+    (cond ((atom list) nil)
+          ((eql 'unquote (first list)) (remove-quoted-symbols (cdr list)))
+          (t (append (ensure-list (skip-quoted-symbols (car list)))
+                     (ensure-list (skip-quoted-symbols (cdr list)))))))
+
   (defun sort-args (args)
     (sort args (lambda (x y)
                  (cond
@@ -64,7 +82,7 @@
 
   (defun make-fn (narg form)
     (multiple-value-bind (lambda-list ignore-vars)
-        (make-lambda-list narg (extract-args form))
+        (make-lambda-list narg (extract-args (remove-quoted-symbols form)))
       `(lambda ,lambda-list
          ,@(when ignore-vars
              `((declare (ignore ,@ignore-vars))))
