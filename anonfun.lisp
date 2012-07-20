@@ -32,15 +32,8 @@
   (defun remove-quoted-symbols (list)
     (cond ((atom list) list)
           ((eql 'quote (first list)) nil)
-          ((eql 'backquote (first list)) (skip-quoted-symbols (cdr list)))
           (t (append (ensure-list (remove-quoted-symbols (car list)))
                      (ensure-list (remove-quoted-symbols (cdr list)))))))
-
-  (defun skip-quoted-symbols (list)
-    (cond ((atom list) nil)
-          ((eql 'unquote (first list)) (remove-quoted-symbols (cdr list)))
-          (t (append (ensure-list (skip-quoted-symbols (car list)))
-                     (ensure-list (skip-quoted-symbols (cdr list)))))))
 
   (defun sort-args (args)
     (sort args (lambda (x y)
